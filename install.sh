@@ -94,7 +94,7 @@ echo "============================"
 echo "1) Install Fix (free port 53, custom DNS)"
 echo "2) Uninstall & Restore Defaults"
 echo "============================"
-read -rp "Choose an option [1-2]: " choice
+read -rp "Choose an option [1-2]: " choice || choice=""
 
 case "$choice" in
     1) install_fix ;;
