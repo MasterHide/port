@@ -66,26 +66,27 @@ EOF
     echo "[✔] Installation complete. Changes applied now. Reboot recommended for persistence."
 }
 
-uninstall_fix() {
-    echo "[*] Uninstalling fix53 and restoring defaults..."
+uuninstall_fix() {
+    echo "[*] Uninstalling fix53 and restoring system DNS..."
 
-    # Remove service and script
+    # Disable service but do NOT remove files
     sudo systemctl disable fix53.service || true
-    sudo rm -f $SERVICE_FILE
-    sudo rm -f $SCRIPT_FILE
     sudo systemctl daemon-reload
 
-    # Unlock resolv.conf if locked
+    # Unlock /etc/resolv.conf if needed
     if command -v chattr >/dev/null 2>&1; then
         chattr -i /etc/resolv.conf || true
     fi
-    rm -f /etc/resolv.conf
 
-    echo "[*] Re-enabling systemd-resolved..."
+    echo "[*] Re-enabling and restarting systemd-resolved..."
     systemctl enable systemd-resolved || true
     systemctl start systemd-resolved || true
 
-    echo "[✔] Uninstallation complete. System restored to defaults."
+    echo "[*] Restoring default resolv.conf symlink..."
+    rm -f /etc/resolv.conf
+    ln -s /run/systemd/resolve/resolv.conf /etc/resolv.conf
+
+    echo "[✔] Uninstallation complete. DNS resolution is restored."
 }
 
 # Main logic — interactive or CLI mode
