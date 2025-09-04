@@ -23,8 +23,7 @@ systemctl disable systemd-resolved || true
 echo "[*] Updating resolv.conf..."
 rm -f /etc/resolv.conf
 echo "nameserver 1.1.1.1" > /etc/resolv.conf
-
-# Lock resolv.conf if chattr exists
+# Lock resolv.conf if chattr is available
 if command -v chattr >/dev/null 2>&1; then
     chattr +i /etc/resolv.conf || true
 fi
@@ -44,7 +43,7 @@ EOF
     sudo chmod +x $SCRIPT_FILE
 
     # Create the systemd service
-    cat << EOF | sudo tee $SERVICE_FILE > /dev/null
+    cat << 'EOF' | sudo tee $SERVICE_FILE > /dev/null
 [Unit]
 Description=Fix DNS and free up port 53 on boot
 After=network-online.target
@@ -52,7 +51,7 @@ Wants=network-online.target
 
 [Service]
 Type=oneshot
-ExecStart=$SCRIPT_FILE
+ExecStart=/usr/local/bin/fix53.sh
 RemainAfterExit=yes
 
 [Install]
@@ -76,7 +75,7 @@ uninstall_fix() {
     sudo rm -f $SCRIPT_FILE
     sudo systemctl daemon-reload
 
-    # Unlock resolv.conf if possible
+    # Unlock resolv.conf if locked
     if command -v chattr >/dev/null 2>&1; then
         chattr -i /etc/resolv.conf || true
     fi
