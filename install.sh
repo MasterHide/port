@@ -9,13 +9,10 @@ SCRIPT_FILE="/usr/local/bin/fix53.sh"
 install_fix() {
     echo "[*] Installing fix53 script and service..."
 
-    # Create the script
+    # Create the fix53.sh script
     cat << 'EOF' | sudo tee $SCRIPT_FILE > /dev/null
 #!/bin/bash
-# fix53.sh - Free up port 53 and set custom DNS
-
 set -e
-
 echo "[*] Stopping and disabling systemd-resolved..."
 systemctl stop systemd-resolved || true
 systemctl disable systemd-resolved || true
@@ -23,20 +20,19 @@ systemctl disable systemd-resolved || true
 echo "[*] Updating resolv.conf..."
 rm -f /etc/resolv.conf
 echo "nameserver 1.1.1.1" > /etc/resolv.conf
-# Lock resolv.conf if chattr is available
 if command -v chattr >/dev/null 2>&1; then
     chattr +i /etc/resolv.conf || true
 fi
 
-echo "[*] Restarting networking (if available)..."
+echo "[*] Restarting networking..."
 systemctl restart networking || true
 systemctl restart NetworkManager || true
 
 echo "[*] Checking port 53..."
 if ss -tuln | grep -E '(:53[[:space:]]|:53$)'; then
-  echo "⚠ Port 53 is still in use!"
+    echo "⚠ Port 53 is still in use!"
 else
-  echo "✔ Port 53 is free and ready."
+    echo "✔ Port 53 is free and ready."
 fi
 EOF
 
@@ -58,40 +54,37 @@ RemainAfterExit=yes
 WantedBy=multi-user.target
 EOF
 
-    # Enable service
-    echo "[*] Enabling service..."
+    echo "[*] Enabling fix53.service..."
     sudo systemctl daemon-reload
     sudo systemctl enable fix53.service
 
-    echo "[✔] Installation complete. Changes applied now. Reboot recommended for persistence."
+    echo "[✔] Installation complete. A reboot is recommended."
 }
 
-uuninstall_fix() {
+uninstall_fix() {
     echo "[*] Uninstalling fix53 and restoring system DNS..."
 
-    # Disable service but do NOT remove files
+    # Disable service (do not remove files)
     sudo systemctl disable fix53.service || true
     sudo systemctl daemon-reload
 
-    # Unlock /etc/resolv.conf if needed
+    # Restore /etc/resolv.conf
     if command -v chattr >/dev/null 2>&1; then
         chattr -i /etc/resolv.conf || true
     fi
-
-    echo "[*] Re-enabling and restarting systemd-resolved..."
-    systemctl enable systemd-resolved || true
-    systemctl start systemd-resolved || true
-
-    echo "[*] Restoring default resolv.conf symlink..."
     rm -f /etc/resolv.conf
     ln -s /run/systemd/resolve/resolv.conf /etc/resolv.conf
 
-    echo "[✔] Uninstallation complete. DNS resolution is restored."
+    echo "[*] Re-enabling systemd-resolved..."
+    systemctl enable systemd-resolved || true
+    systemctl start systemd-resolved || true
+
+    echo "[✔] Uninstallation complete. DNS should be restored."
 }
 
-# Main logic — interactive or CLI mode
+# ==== MAIN LOGIC ====
+
 if [[ -t 0 ]]; then
-    # Interactive (has terminal)
     echo "============================"
     echo " Port 53 Fix Manager "
     echo "============================"
@@ -100,7 +93,7 @@ if [[ -t 0 ]]; then
     echo "============================"
     read -rp "Choose an option [1-2]: " choice || choice=""
 else
-    # Non-interactive (piped or automated)
+    # For non-interactive (e.g., bash -s install)
     choice="$1"
 fi
 
