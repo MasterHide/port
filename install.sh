@@ -88,16 +88,23 @@ uninstall_fix() {
     echo "[✔] Uninstallation complete. System restored to defaults."
 }
 
-echo "============================"
-echo " Port 53 Fix Manager "
-echo "============================"
-echo "1) Install Fix (free port 53, custom DNS)"
-echo "2) Uninstall & Restore Defaults"
-echo "============================"
-read -rp "Choose an option [1-2]: " choice || choice=""
+# Main logic — interactive or CLI mode
+if [[ -t 0 ]]; then
+    # Interactive (has terminal)
+    echo "============================"
+    echo " Port 53 Fix Manager "
+    echo "============================"
+    echo "1) Install Fix (free port 53, custom DNS)"
+    echo "2) Uninstall & Restore Defaults"
+    echo "============================"
+    read -rp "Choose an option [1-2]: " choice || choice=""
+else
+    # Non-interactive (piped or automated)
+    choice="$1"
+fi
 
 case "$choice" in
-    1) install_fix ;;
-    2) uninstall_fix ;;
+    1|"install") install_fix ;;
+    2|"uninstall") uninstall_fix ;;
     *) echo "Invalid choice. Exiting." ;;
 esac
